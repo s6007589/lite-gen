@@ -4,6 +4,12 @@ import os
 import zipfile
 import shutil
 
+def get_tcname(grp, num):
+	# For ioi-cms
+	return str(grp+1).zfill(2) + '-' + str(num+1).zfill(2)
+    # For cafe-grader
+	# return str(grp+1) + chr(97+num)
+
 parser = argparse.ArgumentParser(description='Generate some testcases', formatter_class=argparse.RawDescriptionHelpFormatter, epilog='''
 Detailed Usage:
 
@@ -25,24 +31,33 @@ args = parser.parse_args()
 # 1.
 conf = open('conf.cfg','r')
 inps = conf.read().strip().split('\n')
-n = len(inps) # Number of test cases
-for i in range(n):
-	# x is i+1
+grps = []
+for line in inps:
+	if len(line) == 0:
+		continue
+	if line[0] == '#':
+		grps.append(0)
+		continue
+	tcname = get_tcname(len(grps)-1, grps[-1]) #str(len(grps)) + chr(97+grps[-1])
+	grps[-1] += 1
+	print('Generating testcase', tcname)
 	# 2.
 	inpf = open('tmpf','w')
-	inpf.write(inps[i])
+	inpf.write(line)
 	inpf.write('\n')
 	inpf.close()
-	os.system('python gen.py < tmpf > ' + str(i+1) + '.in')
+	os.system('python3 gen.py < tmpf > ' + tcname + '.in')
 	
 	# 3.
-	os.system('python sol.py < ' + str(i+1) + '.in > ' + str(i+1) + '.sol')
+	os.system('./sol < ' + tcname + '.in > ' + tcname + '.sol')
 
 # 5.
 os.mkdir('result')
-for i in range(n):
-	os.rename(str(i+1) + '.in', 'result/' + str(i+1) + '.in')
-	os.rename(str(i+1) + '.sol', 'result/' + str(i+1) + '.sol')
+for g in range(len(grps)):
+	for i in range(grps[g]):
+		tcname = get_tcname(g, i)
+		os.rename(tcname + '.in', 'result/' + tcname + '.in')
+		os.rename(tcname + '.sol', 'result/' + tcname + '.sol')
 
 # 6.
 # ziph is zipfile handle
@@ -54,5 +69,5 @@ for root, dirs, files in os.walk(path):
 ziph.close()
 
 # 7. (Optional) Clean up
-shutil.rmtree('result')
+#shutil.rmtree('result')
 os.remove('tmpf')
